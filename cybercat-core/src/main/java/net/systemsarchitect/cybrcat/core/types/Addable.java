@@ -1,0 +1,8 @@
+package net.systemsarchitect.cybrcat.core.types;
+
+/**
+ * Created by lukasz on 04/02/2017.
+ */
+public interface Addable {
+    CCatValue add(CCatValue val);
+}

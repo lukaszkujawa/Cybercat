@@ -1,0 +1,9 @@
+json "net.systemsarchitect.cybrcat.module.output.Json" {
+
+}
+
+json({hello = "world"})
+
+string = "Hello World"
+
+print string.replace("ld", "*").replace("ll", "*").replace("e","-")

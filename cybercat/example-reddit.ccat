@@ -1,0 +1,124 @@
+
+json "net.systemsarchitect.cybrcat.module.output.Json" { }
+
+
+http "net.systemsarchitect.cybrcat.module.http.Http" {
+    /**
+    Don't go deeper than 2nd page
+
+    example-reddit graph has a closed circuit (http -> pagination -> http -> pagination -> etc). In order to
+    control the number of passes `http` module will reject `Packets` older than 2.
+
+    Modules pass data between each other with `Packet` class. Every Packet has an age which starts from 0
+    for the first message (triggered with `http({ url = "http://www.reddit.com/r/programming" })`) and gets
+    incremented as it goes though linked modules.
+    */
+    maxage = 3
+
+    headers = {
+        "User-Agent" = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:47.0) Gecko/20100101 Firefox/47.0"
+    }
+
+    /**
+    Every module offers `before` and `after` event which is triggered before and after the module
+    */
+    after = function() {
+        print " - http [after]"
+    }
+
+    before = function() {
+        print " - http [before]"
+    }
+
+}
+
+links "net.systemsarchitect.cybrcat.module.parser.JSoup" {
+    /**
+    Process data coming out from links module before making another Http request
+
+    The example-reddit graph consists of two circuits:
+        1. http -> pagination -> http (as mentioned above)
+        2. http -> links -> json
+
+    The first circuit can "infinitely" produce more data to be processed by the second circuit. In situation
+    like this one it's necessary to finish processing one unit of work before requesting more data (which would
+    eventually cause out of memory error).
+
+    Cybercat processed the oldest messages first. Changing the `age increment` value from default "1" to "2"
+    for the `link` module will guarantee processing all data in the 2nd circuit pipeline before passing
+    new link from pagination to http in the 1st circuit.
+     */
+    ageinc = 2
+
+    /**
+    JSoup selector configured to select link block
+    */
+    selector = "#siteTable div.thing"
+
+    /**
+    Usually it's required to extract multiple values from parent block
+
+    JSoup module offers `each` event which will be triggered for each element found by the selector
+    */
+    each = function(e) {
+
+        /**
+        Return map with 3 values: titles, number of comments and url
+        */
+        return {
+            title = this.select("a.title")
+            comments = this.select("a.comments").replace(" comments", "")
+            url = this.select("a.title", "href")
+        }
+    }
+
+    after = function() {
+        print " - links [after]"
+    }
+
+    before = function() {
+        print " - links [before]"
+    }
+
+}
+
+pagination "net.systemsarchitect.cybrcat.module.parser.JSoup" {
+
+    selector = [".next-button a", "href"]
+
+    each = function(e) {
+        /**
+        `link` module used `return` command while `pagination` is using `this.emit`.
+
+        The only difference will be the number of packets returned by both modules. `Link` module will
+        return only one packet with an array of {title, comments, url} maps while `pagination` will
+        return as many separate packets with {url} as it will be available on the page (it doesn't matter
+        for reddit as it shows only the previous page)
+        */
+        this.emit({ url = e })
+    }
+
+    after = function() {
+        print " - pagination [after]"
+    }
+
+    before = function() {
+        print " - pagination [before]"
+    }
+
+}
+
+/**
+    Wire-up modules together into a graph. The graph as mentioned before has 2 circuits:
+        1. http -> pagination -> http (closed)
+        2. http -> links -> json
+*/
+http        .target = [links, pagination]
+links       .target = json
+pagination  .target = http
+
+/**
+    Initiate the circuit by send Packet to the `http` module
+*/
+http({ url = "http://www.reddit.com/r/programming" })
+

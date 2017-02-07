@@ -1,0 +1,26 @@
+
+json "net.systemsarchitect.cybrcat.module.output.Json" {
+
+}
+
+jsoup "net.systemsarchitect.cybrcat.module.parser.JSoup" {
+
+    selector = "li.link"
+
+    target = json
+
+    each = function(e) {
+        return {
+            title = this.select("h2 a") + "/whatever/" + (10 / 2)
+            url = this.select("h2 a", "href")
+        }
+    }
+}
+
+http "net.systemsarchitect.cybrcat.module.http.Http" {
+    target = jsoup
+}
+
+
+
+http({url = "http://wykop.pl"})

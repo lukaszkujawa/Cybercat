@@ -1,0 +1,40 @@
+
+myModule "net.systemsarchitect.cybrcat.core.Module" {
+
+    before = function() {
+        localVariable = "local-inside-before"
+        print "-----------------"
+        print globalVariable
+        print localVariable
+        print "+++++++++++++++++"
+        print this.before
+        print "+++++++++++++++++"
+    }
+
+    after = function() {
+        localVariable = "local-inside-after"
+        print "-----------------"
+        print globalVariable
+        print localVariable
+    }
+
+}
+
+myMap = {
+
+    foo = {
+        bar = "** MAP VALUE ** " + (10 / 2)
+    }
+
+}
+
+myMap.foo.foo = "test"
+print myMap.foo
+
+globalVariable = "gloabl-variable"
+localVariable = "local-outside"
+
+myModule()
+
+print "-----------------"
+print localVariable

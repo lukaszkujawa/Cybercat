@@ -1,0 +1,5 @@
+
+a = (10.+12.) / 2
+b = (a * a) / 2 - 0.5
+
+print "Simple calculation: " + b
